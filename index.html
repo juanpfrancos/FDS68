@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dina — Mágica</title>
+
+  <!-- Preconnect for Google Fonts (mejora carga) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Fuente opcional de Google para acompañar a la tipografía local -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- GSAP para animaciones mágicas (defer) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <style>
+  /* Estilos globales */
+  :root{
+    --bg:#000;
+    --fg:#fff;
+    --muted:rgba(255,255,255,0.12);
+    --accent:#d4af37; /* oro tenue */
+  }
+  /* Cargar tipografía local incluida en assets */
+  @font-face{
+    font-family: 'HarryLocal';
+    src: url('assets/harry.TTF') format('truetype');
+    font-weight: 400 700;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  html,body{height:100%;}
+  body{
+    margin:0;
+    padding:0;
+    background:var(--bg);
+    color:var(--fg);
+    font-family: 'Cinzel Decorative', 'HarryLocal', serif;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    overflow:auto; /* permitir scroll para mejorar la experiencia y accesibilidad */
+  }
+
+  /* Contenedor principal centrado */
+  main{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    position:relative;
+    padding:48px 20px;
+    box-sizing:border-box;
+  }
+
+  /* Capa de niebla/partículas (canvas) */
+  #magic-canvas{
+    position:fixed;
+    top:0;left:0;width:100%;height:100%;z-index:0;
+    pointer-events:none;
+  }
+
+  .content{
+    position:relative;
+    z-index:2; /* encima del canvas */
+    max-width:900px;
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:24px;
+    padding:36px;
+    box-sizing:border-box;
+  }
+
+  /* Estilos: Título */
+  h1{
+    font-size:clamp(48px, 8vw, 96px);
+    margin:0;
+    letter-spacing:0.02em;
+    color:var(--fg);
+    text-shadow:
+      0 0 8px rgba(212,175,55,0.08),
+      0 8px 20px rgba(0,0,0,0.8),
+      0 0 24px rgba(212,175,55,0.18);
+    transition:transform 0.6s ease, text-shadow 0.6s ease;
+    font-family:'HarryLocal', 'Cinzel Decorative', serif;
+  }
+
+  /* Estilos: Imagen */
+  .portrait{
+    width:clamp(220px,36vw,420px);
+    max-width:100%;
+    border-radius:18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7), 0 0 40px rgba(212,175,55,0.06) inset;
+    transition:transform 0.6s cubic-bezier(.2,.9,.2,1), box-shadow 0.4s ease;
+    transform-origin:center;
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  }
+  .portrait:hover{
+    transform:translateY(-8px) scale(1.02) rotate(-0.2deg);
+    box-shadow: 0 18px 48px rgba(0,0,0,0.8), 0 0 80px rgba(212,175,55,0.12) inset;
+  }
+
+  /* Estilos: Frase */
+  .message{
+    font-size:clamp(16px,3.2vw,22px);
+    color:var(--fg);
+    max-width:820px;
+    line-height:1.5;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.7), 0 0 10px rgba(212,175,55,0.06);
+    opacity:0.98;
+  }
+
+  /* Estilos: Footer */
+  footer{
+    position:fixed;
+    bottom:18px;
+    left:0;right:0;
+    text-align:center;
+    z-index:3;
+    color:var(--muted);
+    font-size:14px;
+    transition:color .25s ease, transform .25s ease;
+  }
+  footer:hover{color:var(--fg);transform:translateY(-4px)}
+
+  /* Efectos mágicos y animaciones */
+  .glow{
+    animation: gentle-glow 3.6s ease-in-out infinite;
+  }
+  @keyframes gentle-glow{
+    0%{text-shadow:0 0 6px rgba(212,175,55,0.04);} 
+    50%{text-shadow:0 0 28px rgba(212,175,55,0.12);} 
+    100%{text-shadow:0 0 6px rgba(212,175,55,0.04);} 
+  }
+
+  /* Responsividad */
+  @media (max-width:640px){
+    body{overflow:auto}
+    .content{padding:20px}
+    footer{font-size:13px}
+  }
+
+  /* Controles de audio personalizados (botón) */
+  .audio-controls{
+    display:flex;gap:12px;align-items:center;justify-content:center;margin-top:6px;
+    z-index:4;
+  }
+  .btn{
+    background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+    color:var(--fg);
+    border:1px solid rgba(255,255,255,0.06);
+    padding:10px 14px;border-radius:999px;cursor:pointer;font-size:16px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.6);
+  }
+  .btn:active{transform:translateY(1px)}
+
+  /* Overlay tap-to-play (visible si autoplay bloqueado) */
+  .tap-overlay{
+    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;
+    background:linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+    backdrop-filter: blur(4px);opacity:0;visibility:hidden;transition:opacity .3s ease, visibility .3s;
+  }
+  .tap-overlay.show{opacity:1;visibility:visible}
+  .tap-overlay .cta{padding:18px 26px;border-radius:14px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.06)}
+
+  </style>
+</head>
+<body>
+
+  <!-- Canvas para partículas mágicas -->
+  <canvas id="magic-canvas"></canvas>
+
+  <main>
+    <div class="content">
+      <!-- 1. Header / Título -->
+    <header>
+    </header>
+    
+    <!-- 2. Imagen centrada -->
+      <section>
+        <!-- Usamos la ruta real existente: assets/fotos/01.jpg -->
+        <h1 id="title" class="glow">Dina</h1>
+      </section>
+
+      <!-- 3. Frase / Mensaje -->
+      <section>
+      </section>
+
+      <!-- 4. Audio / Controles -->
+      <section class="audio-area" aria-label="Audio de fondo">
+        <!-- audio: autoplay intent, sin controles nativos (usamos controles personalizados) -->
+        <audio id="bg-audio" src="assets/audio.mp3" loop preload="auto" playsinline autoplay></audio>
+
+        <div class="audio-controls">
+          <button id="playpause" class="btn" aria-label="Reproducir / Pausar">⏵ Reproducir</button>
+          <button id="mute" class="btn" aria-label="Silenciar / Activar sonido">🔊</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Overlay para indicar al usuario que toque para permitir autoplay si está bloqueado -->
+  <div id="tap" class="tap-overlay" role="dialog" aria-hidden="true">
+    <div class="cta">
+      <p style="margin:0 0 12px 0;font-size:18px;color:var(--fg)">Toca para activar el audio y la magia ✨</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button id="tapPlay" class="btn">Tocar y escuchar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Footer -->
+  <footer>
+    Hecho con amor por Juan Pablo ❤️
+  </footer>
+
+  <script>
+  /* Script: Partículas mágicas */
+  (function(){
+    const canvas = document.getElementById('magic-canvas');
+    const ctx = canvas.getContext('2d');
+    let w=canvas.width = innerWidth;
+    let h=canvas.height = innerHeight;
+
+    window.addEventListener('resize', ()=>{
+      w=canvas.width = innerWidth;
+      h=canvas.height = innerHeight;
+    });
+
+    // crear partículas estrella
+    const stars = Array.from({length: Math.floor((w*h)/60000)}, ()=>createStar());
+
+    function createStar(){
+      const size = Math.random()*1.8 + 0.4;
+      return {
+        x: Math.random()*w,
+        y: Math.random()*h,
+        vx: (Math.random()-0.5)*0.15,
+        vy: - (Math.random()*0.2 + 0.02),
+        r: size,
+        alpha: Math.random()*0.9 + 0.1,
+        twinkle: Math.random()*0.02 + 0.01
+      };
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,w,h);
+      // ligera niebla radial
+      const g = ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.max(w,h)/1.2);
+      g.addColorStop(0, 'rgba(26,13,12,0.06)');
+      g.addColorStop(1, 'rgba(0,0,0,0.8)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,w,h);
+
+      for(let s of stars){
+        s.x += s.vx; s.y += s.vy; s.alpha += Math.sin(Date.now()*s.twinkle/1000)*0.002;
+        if(s.y < -10 || s.x < -20 || s.x > w+20) {
+          Object.assign(s, createStar(), {x: Math.random()*w, y: h+10});
+        }
+
+        ctx.beginPath();
+        const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r*8);
+        grad.addColorStop(0, `rgba(212,175,55,${0.9*s.alpha})`);
+        grad.addColorStop(0.4, `rgba(255,255,255,${0.5*s.alpha})`);
+        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = grad;
+        ctx.arc(s.x, s.y, s.r*6, 0, Math.PI*2);
+        ctx.fill();
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+
+  /* Script: Control de audio */
+  (function(){
+    const audio = document.getElementById('bg-audio');
+    const playBtn = document.getElementById('playpause');
+    const muteBtn = document.getElementById('mute');
+    const overlay = document.getElementById('tap');
+    const tapPlay = document.getElementById('tapPlay');
+
+    // intenta reproducir al cargar (algunos navegadores bloquearán si no hay interacción)
+    function tryAutoPlay(){
+      audio.play().then(()=>{
+        // reproducción automática exitosa
+        playBtn.textContent = '⏸ Pausar';
+        overlay.classList.remove('show');
+      }).catch((err)=>{
+        // autoplay bloqueado: mostrar overlay invitando a tocar
+        overlay.classList.add('show');
+        overlay.setAttribute('aria-hidden','false');
+        playBtn.textContent = '⏵ Reproducir';
+      });
+    }
+
+    // Al cargar la página, intentar autoplay inmediatamente
+    window.addEventListener('load', ()=>{
+      // intención de reproducir: si el navegador bloquea, el catch mostrará la CTA
+      tryAutoPlay();
+    });
+
+    // Play/pause personalizado
+    playBtn.addEventListener('click', ()=>{
+      if(audio.paused){
+        audio.play().then(()=>{ playBtn.textContent='⏸ Pausar'; overlay.classList.remove('show'); }).catch(()=>{ overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false'); });
+      } else {
+        audio.pause(); playBtn.textContent='⏵ Reproducir';
+      }
+    });
+
+    // Mute toggle
+    muteBtn.addEventListener('click', ()=>{
+      audio.muted = !audio.muted;
+      muteBtn.textContent = audio.muted ? '🔇' : '🔊';
+    });
+
+    // Tap overlay action
+    tapPlay.addEventListener('click', ()=>{
+      audio.play().then(()=>{
+        overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); playBtn.textContent='⏸ Pausar';
+      }).catch(()=>{
+        // si aún falla, mantener overlay
+      });
+    });
+
+    // Intento adicional: cuando el usuario interactúe con el documento, quitar overlay si se logra reproducir
+    ['pointerdown','keydown','touchstart'].forEach(evt=>{
+      window.addEventListener(evt, ()=>{
+        if(!overlay.classList.contains('show')) return;
+        audio.play().then(()=>{ overlay.classList.remove('show'); playBtn.textContent='⏸ Pausar'; }).catch(()=>{});
+      },{once:true});
+    });
+  })();
+
+  /* Micro-animaciones con GSAP (entrada mágica) */
+  (function(){
+    // Esperamos a que GSAP cargue
+    function animateEntrance(){
+      if(typeof gsap === 'undefined'){ setTimeout(animateEntrance, 120); return; }
+      const title = document.getElementById('title');
+      gsap.from(title, {duration:1.2, y:60, opacity:0, ease:'power3.out'});
+      gsap.from('.portrait', {duration:1.4, scale:0.96, opacity:0, ease:'power2.out', delay:0.2});
+      gsap.from('.message', {duration:1.2, y:30, opacity:0, ease:'power2.out', delay:0.4});
+    }
+    animateEntrance();
+  })();
+
+  // Nota: ya permitimos scroll por defecto en body (no es necesario forzarlo por JS)
+
+  </script>
+
+</body>
+</html>

@@ -23,6 +23,7 @@
     --fg:#fff;
     --muted:rgba(255,255,255,0.12);
     --accent:#d4af37; /* oro tenue */
+    --footer-safe:72px; /* espacio seguro para que el footer no cubra controles en móviles */
   }
   /* Cargar tipografía local incluida en assets */
   @font-face{
@@ -193,9 +194,25 @@
   }
   footer:hover{color:var(--fg);transform:translateY(-4px)}
 
-  /* Resaltar el corazón con animación sutil */
-  footer .heart{font-size:16px;display:inline-block;transform-origin:center center;animation:beat 2s infinite}
-  @keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  /* Resaltar el corazón con animación de palpitar (más natural) */
+  footer .heart{
+    font-size:16px;
+    display:inline-block;
+    transform-origin:center center;
+    animation:beat 1.2s cubic-bezier(.2,.8,.2,1) infinite;
+    will-change:transform;
+  }
+  @keyframes beat{
+    0%,100%{transform:scale(1)}
+    25%{transform:scale(1.12)}
+    50%{transform:scale(1)}
+    75%{transform:scale(1.06)}
+  }
+
+  /* Reduced motion: disable pulsing for users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    footer .heart{animation:none}
+  }
 
   /* Efectos mágicos y animaciones */
   .glow{
@@ -212,6 +229,9 @@
     body{overflow:auto}
     .content{padding:20px}
     footer{font-size:13px}
+    /* Evitar que el footer fijo tape controles en pantallas pequeñas: dar espacio adicional al contenido */
+    /* Usamos body padding-bottom para empujar la página hacia arriba y dejar sitio al footer */
+    body{padding-bottom:calc(var(--footer-safe) + 12px);}
   }
 
   /* Controles de audio personalizados (botón) */

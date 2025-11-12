@@ -21,6 +21,7 @@
     --fg:#fff;
     --muted:rgba(255,255,255,0.12);
     --accent:#d4af37; /* oro tenue */
+    --footer-safe:72px; /* espacio seguro para que el footer no cubra controles en móviles */
   }
   /* Cargar tipografía local incluida en assets */
   @font-face{
@@ -58,13 +59,13 @@
   /* Capa de niebla/partículas (canvas) */
   #magic-canvas{
     position:fixed;
-    top:0;left:0;width:100%;height:100%;z-index:0;
+    top:0;left:0;width:100%;height:100%;z-index:1;
     pointer-events:none;
   }
 
   .content{
     position:relative;
-    z-index:2; /* encima del canvas */
+    z-index:3; /* encima del canvas */
     max-width:900px;
     width:100%;
     display:flex;
@@ -127,6 +128,26 @@
   }
   footer:hover{color:var(--fg);transform:translateY(-4px)}
 
+  /* Resaltar el corazón con animación de palpitar (más natural) */
+  footer .heart{
+    font-size:16px;
+    display:inline-block;
+    transform-origin:center center;
+    animation:beat 1.2s cubic-bezier(.2,.8,.2,1) infinite;
+    will-change:transform;
+  }
+  @keyframes beat{
+    0%,100%{transform:scale(1)}
+    25%{transform:scale(1.12)}
+    50%{transform:scale(1)}
+    75%{transform:scale(1.06)}
+  }
+
+  /* Reduced motion: disable pulsing for users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    footer .heart{animation:none}
+  }
+
   /* Efectos mágicos y animaciones */
   .glow{
     animation: gentle-glow 3.6s ease-in-out infinite;
@@ -139,9 +160,19 @@
 
   /* Responsividad */
   @media (max-width:640px){
-    body{overflow:auto}
+    body{overflow:auto;padding-bottom:calc(var(--footer-safe) + 12px);}
     .content{padding:20px}
     footer{font-size:13px}
+  }
+
+  /* Fondo del castillo proporcionado por usuario (hogwarts.jpg) - difuminado y en baja opacidad */
+  .castle-bg{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image: url('assets/hogwarts.jpg');
+    background-size:cover; background-position:center center; background-repeat:no-repeat;
+    filter: blur(4px) brightness(0.6) contrast(1);
+    opacity:0.72;
+    transform: translateZ(0);
   }
 
   /* Controles de audio personalizados (botón) */
@@ -217,8 +248,9 @@
   </div>
 
   <!-- 5. Footer -->
+  <div class="castle-bg" aria-hidden="true"></div>
   <footer>
-    Hecho con amor por Juan Pablo ❤️
+    Hecho con amor por Juan Pablo <span class="heart">❤️</span>
   </footer>
 
   <script>
